@@ -1,0 +1,50 @@
+# This workflow will publish to IBM Cloud Foundry runtime when a release is created
+#
+# To configure this workflow:
+#
+# 1. Setup secrets in your repository by going to settings: Create IBM_CLOUD_API_KEY
+# 2. Change the values for the IBM_CLOUD_REGION, ORG_NAME, SPACE_NAME and APP_NAME
+# IBM_CLOUD_REGION = ng
+# ORG_NAME = your@org.name
+# SPACE_NAME = dev
+# APP_NAME = your-app-name
+
+name: Deploy to CF
+
+on: [push]
+
+# Environment variables available to all jobs and steps in this workflow
+env:
+  GITHUB_SHA: ${{ github.sha }}
+  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+  IBM_CLOUD_REGION: ng
+  ORG_NAME: your@org.name
+  SPACE_NAME: dev
+  APP_NAME: your-app-name
+
+jobs:
+  setup-deploy:
+    name: Setup, and Deploy
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Download and Install IBM Cloud CLI
+    - name: Install IBM Cloud CLI
+      run: |
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud cf install -f
+        ibmcloud --version
+        ibmcloud config --check-version=false
+
+    # Authenticate with IBM Cloud CLI
+    - name: Authenticate with IBM Cloud CLI
+      run: |
+        ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -a "https://api.${IBM_CLOUD_REGION}.bluemix.net/" -o "${ORG_NAME}" -s "${SPACE_NAME}"
+
+    # Deploy to the CF
+    - name: Deploy to CF
+      run: |
+        ibmcloud cf push $APP_NAME
